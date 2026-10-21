@@ -189,6 +189,7 @@ impl USBMonitor {
         let mut state = self.state.write().await;
         state.pump_rpm = rpm_data.pump_rpm;
         state.fan_rpm = rpm_data.fan_rpm;
+        state.fan_duties = self.controller.software_duties();
 
         // Fallback: when the Linker reports no fan tach (radiator fans
         // wired to the motherboard instead of its AIO FAN header), surface

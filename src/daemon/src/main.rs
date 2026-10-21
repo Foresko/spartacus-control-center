@@ -87,6 +87,13 @@ pub struct DaemonState {
     /// Fan control arbitration: true = automatic (curve loop owns duties),
     /// false = manual (GUI sliders/pump writes own them until a curve apply).
     pub fan_control_auto: bool,
+    /// Second GPU on multi-GPU rigs (nvidia-smi index 1); None when absent.
+    pub gpu2_temp: Option<f32>,
+    pub gpu2_usage: Option<f32>,
+    pub gpu2_watts: Option<f32>,
+    /// Commanded [pump, aio, ext1, ext2] duties while the daemon drives the
+    /// Linker; None while the motherboard/firmware owns the fans.
+    pub fan_duties: Option<[u8; 4]>,
 }
 
 impl Default for DaemonState {
@@ -117,6 +124,10 @@ impl Default for DaemonState {
             lcd_gui_override: false,
             lcd_gui_override_until_ms: 0,
             fan_control_auto: true,
+            gpu2_temp: None,
+            gpu2_usage: None,
+            gpu2_watts: None,
+            fan_duties: None,
         }
     }
 }
@@ -148,6 +159,11 @@ async fn main() -> Result<()> {
             net_down_kbps: 0.0,
             pump_rpm: 1785,
             fan_rpm: 1300,
+            gpu2_temp: Some(41.0),
+            gpu2_usage: Some(5.0),
+            gpu2_watts: Some(35.0),
+            pump_duty: Some(40.0),
+            fan_duty: Some(38.0),
         };
         let r = screen::ScreenRenderer::new(&args[2])?;
         let frame = r.render(&m);
@@ -181,6 +197,11 @@ async fn main() -> Result<()> {
             frametime_ms: 7.0,
             cpu_watts: 88.0,
             gpu_watts: 220.0,
+            gpu2_temp: Some(52.0),
+            gpu2_usage: Some(31.0),
+            gpu2_watts: Some(180.0),
+            pump_duty: Some(60.0),
+            fan_duty: Some(45.0),
         };
         let frame = renderer.render_spec_frame(&spec, &m);
         std::fs::write(&args[3], &frame)?;

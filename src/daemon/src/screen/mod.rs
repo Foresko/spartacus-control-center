@@ -34,6 +34,13 @@ pub struct Metrics {
     pub frametime_ms: f32,
     pub cpu_watts: f32,
     pub gpu_watts: f32,
+    /// Second GPU; None when the rig has a single GPU.
+    pub gpu2_temp: Option<f32>,
+    pub gpu2_usage: Option<f32>,
+    pub gpu2_watts: Option<f32>,
+    /// Commanded pump / AIO-fan duty %; None while the motherboard owns the fans.
+    pub pump_duty: Option<f32>,
+    pub fan_duty: Option<f32>,
 }
 
 impl Metrics {
@@ -93,7 +100,7 @@ impl ScreenRenderer {
     }
 
     /// Switch themes by name: built-ins ("cards", "cards-light", "colorful",
-    /// "rings"), embedded spec themes ("neon", "aurora", "slate") or a spec
+    /// "rings"), embedded spec themes ("aurora", "foresko-dark") or a spec
     /// file looked up in ~/.config/spartacus/themes, /etc/spartacus/themes
     /// and /usr/share/spartacus/themes.
     pub fn set_theme(&mut self, theme: &str) {
@@ -117,6 +124,7 @@ impl ScreenRenderer {
         }
         self.spec = match self.theme.as_str() {
             "aurora" => theme_spec::parse_spec(theme_spec::AURORA_JSON).ok(),
+            "foresko-dark" => theme_spec::parse_spec(theme_spec::FORESKO_DARK_JSON).ok(),
             "cards" | "cards-light" | "colorful" | "rings" => None,
             other => {
                 log::warn!("Theme '{other}' not found; using cards");
@@ -240,6 +248,11 @@ pub fn snapshot(state: &crate::DaemonState) -> Metrics {
         net_down_kbps: state.net_down_kbps,
         pump_rpm: state.pump_rpm,
         fan_rpm: state.fan_rpm[0],
+        gpu2_temp: state.gpu2_temp,
+        gpu2_usage: state.gpu2_usage,
+        gpu2_watts: state.gpu2_watts,
+        pump_duty: state.fan_duties.map(|d| d[0] as f32),
+        fan_duty: state.fan_duties.map(|d| d[1] as f32),
     }
 }
 
