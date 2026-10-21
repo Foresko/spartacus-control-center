@@ -34,6 +34,13 @@ pub struct Metrics {
     pub frametime_ms: f32,
     pub cpu_watts: f32,
     pub gpu_watts: f32,
+    /// Second GPU; None when the rig has a single GPU.
+    pub gpu2_temp: Option<f32>,
+    pub gpu2_usage: Option<f32>,
+    pub gpu2_watts: Option<f32>,
+    /// Commanded pump / AIO-fan duty %; None while the motherboard owns the fans.
+    pub pump_duty: Option<f32>,
+    pub fan_duty: Option<f32>,
 }
 
 impl Metrics {
@@ -93,7 +100,7 @@ impl ScreenRenderer {
     }
 
     /// Switch themes by name: built-ins ("cards", "cards-light", "colorful",
-    /// "rings"), embedded spec themes ("neon", "aurora", "slate") or a spec
+    /// "rings"), embedded spec themes ("aurora", "foresko-dark") or a spec
     /// file looked up in ~/.config/spartacus/themes, /etc/spartacus/themes
     /// and /usr/share/spartacus/themes.
     pub fn set_theme(&mut self, theme: &str) {
@@ -117,6 +124,7 @@ impl ScreenRenderer {
         }
         self.spec = match self.theme.as_str() {
             "aurora" => theme_spec::parse_spec(theme_spec::AURORA_JSON).ok(),
+            "foresko-dark" => theme_spec::parse_spec(theme_spec::FORESKO_DARK_JSON).ok(),
             "cards" | "cards-light" | "colorful" | "rings" => None,
             other => {
                 log::warn!("Theme '{other}' not found; using cards");
@@ -240,5 +248,52 @@ pub fn snapshot(state: &crate::DaemonState) -> Metrics {
         net_down_kbps: state.net_down_kbps,
         pump_rpm: state.pump_rpm,
         fan_rpm: state.fan_rpm[0],
+        gpu2_temp: state.gpu2_temp,
+        gpu2_usage: state.gpu2_usage,
+        gpu2_watts: state.gpu2_watts,
+        pump_duty: state.fan_duties.map(|d| d[0] as f32),
+        fan_duty: state.fan_duties.map(|d| d[1] as f32),
+    }
+}
+
+/// Rotate a square RGB888 frame clockwise by `degrees` (90, 180 or 270); any other angle
+/// or a non-square buffer passes through unchanged.
+pub fn rotate_frame(rgb: Vec<u8>, degrees: u16) -> Vec<u8> {
+    let n = ((rgb.len() / 3) as f64).sqrt() as usize;
+    if n * n * 3 != rgb.len() || !matches!(degrees, 90 | 180 | 270) {
+        return rgb;
+    }
+    let mut out = vec![0u8; rgb.len()];
+    for r in 0..n {
+        for c in 0..n {
+            let (sr, sc) = match degrees {
+                90 => (n - 1 - c, r),
+                180 => (n - 1 - r, n - 1 - c),
+                _ => (c, n - 1 - r),
+            };
+            let d = (r * n + c) * 3;
+            let s = (sr * n + sc) * 3;
+            out[d..d + 3].copy_from_slice(&rgb[s..s + 3]);
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+mod rotate_tests {
+    use super::rotate_frame;
+
+    // 2x2 frame, one byte-triplet per pixel: TL=1 TR=2 BL=3 BR=4.
+    fn px(v: &[u8]) -> Vec<u8> {
+        v.iter().flat_map(|&p| [p, p, p]).collect()
+    }
+
+    #[test]
+    fn rotates_clockwise() {
+        let src = px(&[1, 2, 3, 4]);
+        assert_eq!(rotate_frame(src.clone(), 90), px(&[3, 1, 4, 2]));
+        assert_eq!(rotate_frame(src.clone(), 180), px(&[4, 3, 2, 1]));
+        assert_eq!(rotate_frame(src.clone(), 270), px(&[2, 4, 1, 3]));
+        assert_eq!(rotate_frame(src.clone(), 0), src);
     }
 }

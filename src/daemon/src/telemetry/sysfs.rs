@@ -117,6 +117,38 @@ pub async fn gpu_telemetry() -> Option<(f32, f32)> {
     None
 }
 
+/// One NVIDIA GPU sample: temperature C, usage %, power W (None when unsupported).
+pub type NvidiaGpu = (f32, f32, Option<f32>);
+
+/// Every NVIDIA GPU in nvidia-smi index order, one line per GPU; empty without
+/// nvidia-smi. The primary GPU keeps using `gpu_telemetry`; this feeds GPU-2.
+pub async fn nvidia_gpus() -> Vec<NvidiaGpu> {
+    let Ok(output) = tokio::process::Command::new("nvidia-smi")
+        .args([
+            "--query-gpu=temperature.gpu,utilization.gpu,power.draw",
+            "--format=csv,noheader,nounits",
+        ])
+        .output()
+        .await
+    else {
+        return Vec::new();
+    };
+    parse_nvidia_gpus(&String::from_utf8_lossy(&output.stdout))
+}
+
+fn parse_nvidia_gpus(stdout: &str) -> Vec<NvidiaGpu> {
+    stdout
+        .lines()
+        .filter_map(|line| {
+            let parts: Vec<&str> = line.split(',').map(str::trim).collect();
+            if parts.len() < 3 {
+                return None;
+            }
+            Some((parts[0].parse().ok()?, parts[1].parse().ok()?, parts[2].parse().ok()))
+        })
+        .collect()
+}
+
 /// RAM (used GB, total GB) from /proc/meminfo.
 pub async fn ram_gb() -> Result<(f32, f32)> {
     let content = fs::read_to_string("/proc/meminfo").await?;
@@ -335,4 +367,16 @@ pub async fn motherboard_fan_rpms() -> Vec<u16> {
     }
     fans.truncate(6);
     fans
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_nvidia_gpus;
+
+    #[test]
+    fn parses_every_gpu_line() {
+        let gpus = parse_nvidia_gpus("31, 0, 54.20\n45, 97, [N/A]\n");
+        assert_eq!(gpus, vec![(31.0, 0.0, Some(54.2)), (45.0, 97.0, None)]);
+        assert!(parse_nvidia_gpus("").is_empty());
+    }
 }

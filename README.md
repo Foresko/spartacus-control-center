@@ -8,6 +8,8 @@ The design uses the requested dark palette, CPU / GPU-1 / GPU-2 / RAM columns, a
 
 All preview values are **synthetic**. CPU/GPU bar lengths show utilization; colors show temperature status. RAM color follows occupancy. The footer excludes the rest of the PC and power-supply losses. This browser prototype does not connect to USB hardware or change the daemon's active theme. The editable fragment is [`preview.html`](preview/foresko-dark/preview.html).
 
+The daemon renders the same design natively as the built-in theme **`foresko-dark`** ([`themes/foresko-dark.json`](src/daemon/src/screen/themes/foresko-dark.json)) with live telemetry: switch to it with `SetTheme` (see [Built-in themes](#built-in-themes)). PUMP / FAN show the duties the daemon commands (`--` while the motherboard owns the fans), the GPU-2 column reads the second NVIDIA GPU from `nvidia-smi`, and the footer stays `--` until CPU, GPU-1 and GPU-2 power are all measured.
+
 The upstream Linux application's documentation follows below.
 
 ---
@@ -269,6 +271,7 @@ The panel is rendered **by the daemon, natively, in Rust** — the same code pat
 | `aurora` | deep teal, minimal stat rows, pump ring in the header |
 | `slate` | graphite cards with orange/blue accents |
 | `gaming` | dark neon: huge FPS counter, frametime, CPU/GPU panels, no SSD |
+| `foresko-dark` | black with graphite cards: CPU / GPU-1 / GPU-2 / RAM columns, temperature-colored bars, PUMP / FAN duty grid |
 
 Switch themes from **Theme Studio → APPLY TO DAEMON**, or over IPC:
 
@@ -307,6 +310,8 @@ Widget kinds: `panel` (rounded card), `text`, `ring` (gauge), `bar` (progress), 
 
 Text content supports `{binding}` and `{binding:.N}` placeholders resolved from live metrics; unknown bindings render as `--` — never fake zeros.
 
+Status colors: a `bar` or `ring` with `"status_binding"`, `"warning"` and `"critical"` fills with the spec's `"status"` colors (`normal` / `warning` / `critical`, thresholds inclusive; `inactive` when the metric is missing). A `text` with `"temperature_text": true` keeps its `fill` below `warning` and switches to the status color from there. `"visible_if": "<binding>"` skips a widget while that metric has no value — e.g. GPU-2 power on a single-GPU machine.
+
 Custom themes are looked up in `~/.config/spartacus/themes/<name>.json`, then `/etc/spartacus/themes/`, then `/usr/share/spartacus/themes/`.
 
 ### Bindings reference
@@ -324,6 +329,10 @@ Custom themes are looked up in `~/.config/spartacus/themes/<name>.json`, then `/
 | `net_up`, `net_down` | kB/s | |
 | `pump_rpm`, `fan_rpm` | RPM | fan_rpm = AIO channel |
 | `pump_pct` | % | pump duty approximation |
+| `pump_duty`, `fan_duty` | % | duties the daemon commands (pump, AIO fan); `--` under motherboard control |
+| `gpu2_temp`, `gpu2_usage`, `gpu2_watts` | °C, %, W | second NVIDIA GPU; `--` when absent |
+| `cpu_watts`, `gpu_watts` | W | |
+| `component_watts` | W | CPU + GPU-1 + GPU-2; `--` unless all three are measured |
 
 ---
 
@@ -621,6 +630,10 @@ nothing sent within ~15 s — the daemon theme stream should keep it alive; chec
 Panel shows magenta blocks
 
 a color in your theme spec failed to parse (`#RRGGBB` expected)
+
+Panel content is rotated
+
+set `rotate = 90` / `180` / `270` (degrees clockwise) under `[screen]` in `config.toml`; the panel's own orientation setting (`LcdSetConfig`) doesn't apply to streamed frames. The daemon ignores a `config.toml` that lacks any of the `[usb]`, `[cooling]`, `[telemetry]` or `[ipc]` sections
 
 Theme didn't switch
 

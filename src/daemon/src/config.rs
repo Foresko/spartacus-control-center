@@ -25,6 +25,10 @@ pub struct ScreenConfig {
     /// seconds, so 1000 keeps them ticking; raise to lower USB traffic.
     #[serde(default = "default_refresh_ms")]
     pub refresh_ms: u64,
+    /// Clockwise rotation of streamed frames in degrees (0, 90, 180, 270), for pump caps
+    /// mounted sideways. The panel's NVM orientation (LcdSetConfig) doesn't apply to the stream.
+    #[serde(default)]
+    pub rotate: u16,
 }
 
 fn default_theme() -> String {
@@ -40,6 +44,7 @@ impl Default for ScreenConfig {
         Self {
             theme: default_theme(),
             refresh_ms: default_refresh_ms(),
+            rotate: 0,
         }
     }
 }

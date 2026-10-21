@@ -23,6 +23,12 @@
 //
 // Text content supports {binding} and {binding:.N} placeholders resolved from
 // live metrics; everything outside braces is literal.
+//
+// Status coloring: a bar/ring with "status_binding", "warning" and "critical"
+// fills with the spec's "status" normal/warning/critical color (inactive when
+// the metric is missing). A text with "temperature_text": true keeps its fill
+// below "warning". "visible_if": "<binding>" skips a widget while that metric
+// has no value (e.g. GPU-2 on a single-GPU rig).
 
 use super::draw::{Align, Canvas, Color};
 use super::helpers;
@@ -47,7 +53,46 @@ pub struct ThemeSpec {
     #[serde(default)]
     pub background: BackgroundSpec,
     #[serde(default)]
+    pub status: StatusColors,
+    #[serde(default)]
     pub widgets: Vec<WidgetSpec>,
+}
+
+/// Colors for widgets with a `status_binding`.
+#[derive(Debug, Clone, Deserialize)]
+pub struct StatusColors {
+    #[serde(default = "default_status_normal")]
+    pub normal: String,
+    #[serde(default = "default_status_warning")]
+    pub warning: String,
+    #[serde(default = "default_status_critical")]
+    pub critical: String,
+    #[serde(default = "default_status_inactive")]
+    pub inactive: String,
+}
+
+impl Default for StatusColors {
+    fn default() -> Self {
+        Self {
+            normal: default_status_normal(),
+            warning: default_status_warning(),
+            critical: default_status_critical(),
+            inactive: default_status_inactive(),
+        }
+    }
+}
+
+fn default_status_normal() -> String {
+    "#30D158".into()
+}
+fn default_status_warning() -> String {
+    "#FFD60A".into()
+}
+fn default_status_critical() -> String {
+    "#FF453A".into()
+}
+fn default_status_inactive() -> String {
+    "#58585C".into()
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -136,6 +181,19 @@ pub struct WidgetSpec {
     /// Image file (PNG/JPEG), relative to the theme JSON's directory.
     #[serde(default)]
     pub path: Option<String>,
+    /// Metric that picks the status color; thresholds are inclusive.
+    #[serde(default)]
+    pub status_binding: Option<String>,
+    #[serde(default)]
+    pub warning: Option<f32>,
+    #[serde(default)]
+    pub critical: Option<f32>,
+    /// Text keeps `fill` below `warning`, then takes the status color.
+    #[serde(default)]
+    pub temperature_text: bool,
+    /// Skip the widget while this binding has no value.
+    #[serde(default)]
+    pub visible_if: Option<String>,
 }
 
 // ---------------------------------------------------------------- image cache
@@ -323,12 +381,63 @@ fn binding_value(m: &Metrics, key: &str) -> Option<Val> {
         "cpu_watts" if m.cpu_watts > 0.5 => Val::Num(m.cpu_watts),
         "gpu_watts" if m.gpu_watts > 0.5 => Val::Num(m.gpu_watts),
         "cpu_watts" | "gpu_watts" => return None,
+        "gpu2_temp" => Val::Num(m.gpu2_temp?),
+        "gpu2_usage" => Val::Num(m.gpu2_usage?.clamp(0.0, 100.0)),
+        "gpu2_watts" => Val::Num(m.gpu2_watts.filter(|w| *w > 0.5)?),
+        "pump_duty" => Val::Num(m.pump_duty?),
+        "fan_duty" => Val::Num(m.fan_duty?),
+        "component_watts" => Val::Num(component_watts(m)?),
         "fps" if m.fps > 0.5 => Val::Num(m.fps),
         "frametime" if m.frametime_ms > 0.05 => Val::Num(m.frametime_ms),
         "fps" | "frametime" => return None,
         _ => return None,
     };
     Some(v)
+}
+
+/// CPU + GPU-1 + GPU-2 power; None unless all three are measured, so a
+/// partial sum never passes for the total.
+fn component_watts(m: &Metrics) -> Option<f32> {
+    let measured = |w: f32| (w > 0.5).then_some(w);
+    Some(measured(m.cpu_watts)? + measured(m.gpu_watts)? + measured(m.gpu2_watts?)?)
+}
+
+fn binding_num(m: &Metrics, key: &str) -> Option<f32> {
+    match binding_value(m, key)? {
+        Val::Num(n) => Some(n),
+        Val::Text(s) => s.parse().ok(),
+    }
+}
+
+/// Status color of a widget with a `status_binding`; None for widgets without one.
+fn status_color(spec: &ThemeSpec, w: &WidgetSpec, m: &Metrics) -> Option<Color> {
+    let key = w.status_binding.as_deref()?;
+    let colors = &spec.status;
+    let color = match binding_num(m, key) {
+        None => &colors.inactive,
+        Some(v) if w.critical.is_some_and(|c| v >= c) => &colors.critical,
+        Some(v) if w.warning.is_some_and(|c| v >= c) => &colors.warning,
+        Some(_) => &colors.normal,
+    };
+    Some(parse_color(color))
+}
+
+/// Text color: status-colored texts follow `status_color`; temperature texts
+/// keep their fill until the metric reaches `warning`.
+fn text_color(spec: &ThemeSpec, w: &WidgetSpec, m: &Metrics) -> Color {
+    let fill = opt_color(&w.fill).unwrap_or([0xff; 3]);
+    let Some(status) = status_color(spec, w, m) else {
+        return fill;
+    };
+    if !w.temperature_text {
+        return status;
+    }
+    let value = w.status_binding.as_deref().and_then(|k| binding_num(m, k));
+    match (value, w.warning) {
+        (Some(v), Some(warning)) if v < warning => fill,
+        (Some(_), None) => fill,
+        _ => status,
+    }
 }
 
 fn fmt_num(v: f32, spec: Option<&str>) -> String {
@@ -452,6 +561,11 @@ fn draw_widget(
     images: &mut ImageCache,
     now_ms: u64,
 ) {
+    if let Some(key) = &w.visible_if {
+        if binding_value(m, key).is_none() {
+            return;
+        }
+    }
     match w.kind.as_str() {
         "panel" => {
             let translucent = matches!(w.fill.as_deref(), None | Some("transparent") | Some(""));
@@ -503,7 +617,7 @@ fn draw_widget(
                 w.x as i32,
                 w.y as i32,
                 w.size.max(6.0),
-                opt_color(&w.fill).unwrap_or([0xff; 3]),
+                text_color(spec, w, m),
                 &content,
                 align_of(&w.align),
             );
@@ -514,7 +628,8 @@ fn draw_widget(
             let radius = w.r.max(4.0);
             let thickness = w.thickness.max(1.0);
             let track = opt_color(&w.track).unwrap_or([0x1e, 0x24, 0x38]);
-            let fill = opt_color(&w.fill).unwrap_or([0x00, 0xe5, 0xff]);
+            let fill = status_color(spec, w, m)
+                .unwrap_or_else(|| opt_color(&w.fill).unwrap_or([0x00, 0xe5, 0xff]));
             let pct = binding_pct(m, w);
             let start = w.start;
             let sweep = w.sweep;
@@ -542,7 +657,8 @@ fn draw_widget(
             let bh = w.h.max(2.0) as u32;
             let rad = if w.r > 0.0 { w.r as u32 } else { bh / 2 };
             let track = opt_color(&w.track).unwrap_or([0x1e, 0x24, 0x38]);
-            let fill = opt_color(&w.fill).unwrap_or([0x00, 0xe5, 0xff]);
+            let fill = status_color(spec, w, m)
+                .unwrap_or_else(|| opt_color(&w.fill).unwrap_or([0x00, 0xe5, 0xff]));
             c.round_rect(x, y, bw, bh, rad.min(bh / 2), track);
             let pct = binding_pct(m, w);
             let fw = (bw as f32 * pct / 100.0) as u32;
@@ -574,6 +690,8 @@ fn draw_widget(
 // ---------------------------------------------------------------- built-ins
 
 pub const AURORA_JSON: &str = include_str!("themes/aurora.json");
+/// Port of preview/foresko-dark: CPU / GPU-1 / GPU-2 / RAM columns, PUMP/FAN grid.
+pub const FORESKO_DARK_JSON: &str = include_str!("themes/foresko-dark.json");
 
 /// True when the spec contains an animated image (GIF): the theme stream
 /// should then render at ~10 fps instead of the configured slow refresh.
@@ -628,3 +746,97 @@ pub fn find_spec_file(name: &str) -> Option<PathBuf> {
     None
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn metrics() -> Metrics {
+        Metrics {
+            time: "12:00:00".into(),
+            date: "2026-10-21".into(),
+            cpu_usage: 40.0,
+            cpu_temp: 60.0,
+            cpu_freq_ghz: 5.4,
+            gpu_usage: 90.0,
+            gpu_temp: 70.0,
+            ram_used_gb: 12.0,
+            ram_total_gb: 64.0,
+            disk_used_gb: 55.0,
+            disk_total_gb: 1800.0,
+            net_up_kbps: 1.0,
+            net_down_kbps: 2.0,
+            pump_rpm: 2560,
+            fan_rpm: 960,
+            fps: 0.0,
+            frametime_ms: 0.0,
+            cpu_watts: 95.0,
+            gpu_watts: 480.0,
+            gpu2_temp: None,
+            gpu2_usage: None,
+            gpu2_watts: None,
+            pump_duty: Some(40.0),
+            fan_duty: Some(38.0),
+        }
+    }
+
+    fn widget(json: &str) -> WidgetSpec {
+        serde_json::from_str(json).unwrap()
+    }
+
+    #[test]
+    fn foresko_dark_parses() {
+        let spec = parse_spec(FORESKO_DARK_JSON).unwrap();
+        assert_eq!(spec.name, "foresko-dark");
+        assert_eq!(spec.status.critical, "#FF453A");
+        let gpu2_hidden = |w: &WidgetSpec| w.visible_if.as_deref() == Some("gpu2_temp");
+        assert!(spec.widgets.iter().any(gpu2_hidden));
+    }
+
+    #[test]
+    fn status_color_follows_thresholds() {
+        let spec = parse_spec(r#"{"widgets": []}"#).unwrap();
+        let bar =
+            widget(r#"{"kind":"bar","status_binding":"cpu_temp","warning":85,"critical":95}"#);
+        let mut m = metrics();
+        assert_eq!(status_color(&spec, &bar, &m), Some(parse_color("#30D158")));
+        m.cpu_temp = 85.0;
+        assert_eq!(status_color(&spec, &bar, &m), Some(parse_color("#FFD60A")));
+        m.cpu_temp = 95.0;
+        assert_eq!(status_color(&spec, &bar, &m), Some(parse_color("#FF453A")));
+        let gpu2 =
+            widget(r#"{"kind":"bar","status_binding":"gpu2_temp","warning":80,"critical":87}"#);
+        assert_eq!(status_color(&spec, &gpu2, &m), Some(parse_color("#58585C")));
+    }
+
+    #[test]
+    fn temperature_text_keeps_fill_until_warning() {
+        let spec = parse_spec(r#"{"widgets": []}"#).unwrap();
+        let text = widget(
+            r##"{"kind":"text","fill":"#FEFEFF","status_binding":"gpu_temp","warning":80,"critical":87,"temperature_text":true}"##,
+        );
+        let mut m = metrics();
+        assert_eq!(text_color(&spec, &text, &m), parse_color("#FEFEFF"));
+        m.gpu_temp = 88.0;
+        assert_eq!(text_color(&spec, &text, &m), parse_color("#FF453A"));
+    }
+
+    #[test]
+    fn second_gpu_and_duties_are_optional() {
+        let mut m = metrics();
+        assert!(binding_value(&m, "gpu2_temp").is_none());
+        assert_eq!(format_template("{gpu2_usage:.0}%", &m), "--%");
+        assert_eq!(format_template("{pump_duty:.0}%", &m), "40%");
+        m.pump_duty = None;
+        assert_eq!(format_template("{pump_duty:.0}%", &m), "--%");
+    }
+
+    #[test]
+    fn component_watts_needs_all_three() {
+        let mut m = metrics();
+        assert!(component_watts(&m).is_none());
+        m.gpu2_watts = Some(350.0);
+        assert_eq!(component_watts(&m), Some(925.0));
+        m.cpu_watts = 0.0;
+        assert!(component_watts(&m).is_none());
+    }
+}

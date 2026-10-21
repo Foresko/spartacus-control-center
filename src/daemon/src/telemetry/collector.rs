@@ -63,6 +63,7 @@ impl TelemetryCollector {
         let net = self.net_rates().await;
         let cpu_watts = sysfs::cpu_power_watts(&mut self.prev_pkg_energy).await;
         let gpu_watts = sysfs::gpu_power_watts().await;
+        let gpu2 = sysfs::nvidia_gpus().await.get(1).copied();
 
         {
             let mut state = self.state.write().await;
@@ -89,6 +90,9 @@ impl TelemetryCollector {
             if let Some(w) = gpu_watts {
                 state.gpu_watts = w;
             }
+            state.gpu2_temp = gpu2.map(|g| g.0);
+            state.gpu2_usage = gpu2.map(|g| g.1);
+            state.gpu2_watts = gpu2.and_then(|g| g.2);
         }
 
         debug!(

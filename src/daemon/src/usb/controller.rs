@@ -330,6 +330,12 @@ impl ControllerDevice {
         ]
     }
 
+    /// Duties the daemon is actually driving; None until it has taken control
+    /// or while the fans are handed to the motherboard.
+    pub fn software_duties(&self) -> Option<[u8; 4]> {
+        (self.owns_control && self.report.fan_sync == SOURCE_SOFTWARE).then(|| self.duties())
+    }
+
     /// Write a 64-byte report then read back the 64-byte status report.
     async fn transfer(&mut self, report: &[u8; REPORT_LEN]) -> Result<[u8; REPORT_LEN]> {
         if !self.connected {
