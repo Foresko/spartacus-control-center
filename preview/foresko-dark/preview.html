@@ -1,0 +1,198 @@
+<style>
+  #spartacus-lcd { width: 100%; }
+  #spartacus-lcd .lcd-stage { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 18px 12px 10px; }
+  #spartacus-lcd .lcd-chrome { width: 100%; max-width: 492px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: light-dark(#535862, #b8bec8); font: 12px/1.5 system-ui, sans-serif; }
+  #spartacus-lcd .lcd-name { color: light-dark(#22262e, #e5e8ed); font-weight: 500; letter-spacing: .06em; }
+  #spartacus-lcd .lcd-demo { padding: 3px 8px; border-radius: 5px; color: light-dark(#525960, #c0c6ce); background: light-dark(#e9ecef, #2a2e35); }
+  #spartacus-lcd .lcd-unit { box-sizing: border-box; width: 100%; max-width: 492px; padding: 6px; border-radius: 12px; background: #1C1C1D; box-shadow: 0 6px 20px #00000020; }
+  #spartacus-lcd canvas { width: 100%; height: auto; aspect-ratio: 1; display: block; border-radius: 6px; background: #000000; }
+  #spartacus-lcd .lcd-tools { width: 100%; max-width: 492px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; color: light-dark(#535862, #b8bec8); font: 12px/1.5 system-ui, sans-serif; }
+  #spartacus-lcd .lcd-tools label { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  #spartacus-lcd .lcd-tools select { color-scheme: light dark; min-height: 34px; padding: 5px 28px 5px 9px; border: 1px solid light-dark(#c9cdd4, #4b515b); border-radius: 6px; background: light-dark(#fff, #24272c); color: light-dark(#252930, #e5e8ed); font: inherit; }
+  #spartacus-lcd .lcd-status { font-variant-numeric: tabular-nums; }
+  @media (pointer: coarse) { #spartacus-lcd .lcd-tools select { min-height: 44px; font-size: 16px; } }
+</style>
+<div id="spartacus-lcd">
+  <div class="viz-carousel viz-dotted-background" aria-label="Темы дисплея SPARTACUS" data-previous-label="Предыдущая тема" data-next-label="Следующая тема">
+    <section data-variant="Cards" aria-label="Тема Cards">
+      <div class="lcd-stage">
+        <div class="lcd-chrome"><span class="lcd-name">SPARTACUS · 480 × 480</span><span class="lcd-demo">Моковые данные</span></div>
+        <div class="lcd-unit" id="spartacus-cards" aria-label="Палитра Cards"><canvas width="480" height="480" role="img" aria-label="Дисплей Cards с тестовыми показателями компьютера"></canvas></div>
+        <div class="lcd-tools"><label>Нагрузка <select class="cursor-interaction" aria-label="Тестовая нагрузка Cards"><option value="gaming">Игра</option><option value="idle">Простой</option><option value="stress">Стресс-тест</option><option value="heat">Перегрев · мок</option></select></label><span class="lcd-status" aria-live="polite"></span></div>
+      </div>
+    </section>
+    <section data-variant="Aurora" aria-label="Тема Aurora" hidden>
+      <div class="lcd-stage">
+        <div class="lcd-chrome"><span class="lcd-name">SPARTACUS · 480 × 480</span><span class="lcd-demo">Моковые данные</span></div>
+        <div class="lcd-unit" id="spartacus-aurora" aria-label="Палитра Aurora"><canvas width="480" height="480" role="img" aria-label="Дисплей Aurora с тестовыми показателями компьютера"></canvas></div>
+        <div class="lcd-tools"><label>Нагрузка <select class="cursor-interaction" aria-label="Тестовая нагрузка Aurora"><option value="gaming">Игра</option><option value="idle">Простой</option><option value="stress">Стресс-тест</option><option value="heat">Перегрев · мок</option></select></label><span class="lcd-status" aria-live="polite"></span></div>
+      </div>
+    </section>
+  </div>
+</div>
+<script type="application/json" id="spartacus-specs">{"aurora":{"name":"aurora","background":{"kind":"gradient","top":"#071A17","bottom":"#0D2B23"},"widgets":[{"kind":"text","x":210,"y":54,"size":44,"fill":"#E8FFF4","align":"center","text":"{time}"},{"kind":"text","x":210,"y":80,"size":16,"fill":"#5F8F7E","align":"center","text":"{date}"},{"kind":"text","x":414,"y":62,"size":16,"fill":"#7FBFA8","align":"center","text":"PUMP {pump_pct:.0}%"},{"kind":"panel","x":24,"y":110,"w":432,"h":72,"r":16,"fill":"#0F332A"},{"kind":"text","x":44,"y":140,"size":16,"fill":"#7FBFA8","text":"CPU"},{"kind":"text","x":33.3,"y":168,"size":21,"fill":"#E8FFF4","text":"{cpu_temp:.0}°C · {cpu_freq:.2}GHz"},{"kind":"bar","x":330,"y":130,"w":106,"h":10,"track":"#1A4A3C","fill":"#3DDC97","binding":"cpu_usage","min":0,"max":100,"status_binding":"cpu_temp","warning":85,"critical":95},{"kind":"text","x":317.9,"y":168,"size":17,"fill":"#3DDC97","text":"{cpu_usage:.0}%"},{"kind":"panel","x":24,"y":192,"w":432,"h":72,"r":16,"fill":"#0F332A"},{"kind":"text","x":44,"y":222,"size":16,"fill":"#7FBFA8","text":"GPU"},{"kind":"text","x":44,"y":250,"size":21,"fill":"#E8FFF4","text":"{gpu_temp:.0}°C"},{"kind":"bar","x":330,"y":212,"w":106,"h":10,"track":"#1A4A3C","fill":"#3DDC97","binding":"gpu_usage","min":0,"max":100,"status_binding":"gpu_temp","warning":80,"critical":87},{"kind":"text","x":317.9,"y":250,"size":17,"fill":"#3DDC97","text":"{gpu_usage:.0}%"},{"kind":"panel","x":24,"y":274,"w":432,"h":72,"r":16,"fill":"#0F332A"},{"kind":"text","x":44,"y":304,"size":16,"fill":"#7FBFA8","text":"RAM"},{"kind":"text","x":44,"y":332,"size":21,"fill":"#E8FFF4","text":"{ram_used:.1}/{ram_total:.0} GB"},{"kind":"bar","x":330,"y":294,"w":106,"h":10,"track":"#1A4A3C","fill":"#3DDC97","binding":"ram_pct","min":0,"max":100,"status_binding":"ram_pct","warning":85,"critical":95},{"kind":"text","x":330,"y":332,"size":17,"fill":"#3DDC97","text":"{ram_pct:.0}%"},{"kind":"panel","x":24,"y":356,"w":432,"h":72,"r":16,"fill":"#0F332A"},{"kind":"text","x":44,"y":386,"size":16,"fill":"#7FBFA8","text":"SSD"},{"kind":"text","x":44,"y":414,"size":21,"fill":"#E8FFF4","text":"{disk_used:.0}/{disk_total:.0} GB"},{"kind":"bar","x":330,"y":376,"w":106,"h":10,"track":"#1A4A3C","fill":"#3DDC97","binding":"disk_pct","min":0,"max":100},{"kind":"text","x":328.4,"y":414,"size":17,"fill":"#3DDC97","text":"{disk_pct:.0}%"},{"kind":"text","x":24,"y":456,"size":16,"fill":"#3DDC97","text":"↑ {net_up:.1} kB/s   ↓ {net_down:.1} kB/s"},{"kind":"text","x":456,"y":456,"size":16,"fill":"#7FBFA8","align":"right","text":"{pump_rpm:.0} RPM"},{"kind":"text","x":210,"y":100,"size":14,"fill":"#3DDC97","align":"center","text":"CPU {cpu_watts:.0} W","visible_if":"cpu_watts"}]},"cards":{"name":"cards","background":{"kind":"gradient","top":"#331B55","bottom":"#180C2E"},"widgets":[{"kind":"rect","x":2.0,"y":0,"w":476,"h":56,"fill":"#3A215E"},{"kind":"text","x":16,"y":36,"size":19,"fill":"#C8BCE0","text":"{date}"},{"kind":"text","x":240,"y":42,"size":34,"fill":"#FFFFFF","align":"center","text":"{time}"},{"kind":"text","x":464,"y":36,"size":19,"fill":"#C8BCE0","align":"right","text":"SSD {disk_pct:.0}%"},{"kind":"panel","x":14,"y":66,"w":105,"h":206,"r":14,"fill":"#FFFFFF"},{"kind":"text","x":66,"y":92,"size":17,"fill":"#8A8A92","align":"center","text":"CPU"},{"kind":"text","x":66,"y":138,"size":36,"fill":"#202026","align":"center","text":"{cpu_usage:.0}%"},{"kind":"bar","x":26,"y":154,"w":81,"h":9,"track":"#F0E2E6","fill":"#F3445C","binding":"cpu_usage","min":0,"max":100,"status_binding":"cpu_temp","warning":85,"critical":95},{"kind":"text","x":40,"y":240,"size":11,"fill":"#9A9AA2","align":"center","text":"Freq"},{"kind":"text","x":40,"y":260,"size":14,"fill":"#353540","align":"center","text":"{cpu_freq:.2}G"},{"kind":"text","x":92,"y":240,"size":11,"fill":"#9A9AA2","align":"center","text":"Power"},{"kind":"text","x":92,"y":260,"size":14,"fill":"#353540","align":"center","text":"{cpu_watts:.0}W","visible_if":"cpu_watts"},{"kind":"panel","x":129,"y":66,"w":105,"h":206,"r":14,"fill":"#FFFFFF"},{"kind":"text","x":181,"y":92,"size":17,"fill":"#8A8A92","align":"center","text":"GPU-1"},{"kind":"text","x":181,"y":138,"size":36,"fill":"#202026","align":"center","text":"{gpu_usage:.0}%"},{"kind":"bar","x":141,"y":154,"w":81,"h":9,"track":"#F0E2E6","fill":"#F26AA0","binding":"gpu_usage","min":0,"max":100,"status_binding":"gpu_temp","warning":80,"critical":87},{"kind":"text","x":155,"y":240,"size":11,"fill":"#9A9AA2","align":"center","text":"Load"},{"kind":"text","x":155,"y":260,"size":14,"fill":"#353540","align":"center","text":"{gpu_usage:.0}"},{"kind":"text","x":207,"y":240,"size":11,"fill":"#9A9AA2","align":"center","text":"Power"},{"kind":"text","x":207,"y":260,"size":14,"fill":"#353540","align":"center","text":"{gpu_watts:.0}W","visible_if":"gpu_watts"},{"kind":"panel","x":244,"y":66,"w":105,"h":206,"r":14,"fill":"#FFFFFF"},{"kind":"text","x":296,"y":92,"size":17,"fill":"#8A8A92","align":"center","text":"GPU-2"},{"kind":"text","x":296,"y":138,"size":36,"fill":"#202026","align":"center","text":"{gpu2_usage:.0}%"},{"kind":"bar","x":256,"y":154,"w":81,"h":9,"track":"#F0E2E6","fill":"#D43CB8","binding":"gpu2_usage","min":0,"max":100,"status_binding":"gpu2_temp","warning":80,"critical":87},{"kind":"text","x":270,"y":240,"size":11,"fill":"#9A9AA2","align":"center","text":"Load"},{"kind":"text","x":270,"y":260,"size":14,"fill":"#353540","align":"center","text":"{gpu2_usage:.0}"},{"kind":"text","x":322,"y":240,"size":11,"fill":"#9A9AA2","align":"center","text":"Power"},{"kind":"text","x":322,"y":260,"size":14,"fill":"#353540","align":"center","text":"{gpu2_watts:.0}W","visible_if":"gpu2_watts"},{"kind":"panel","x":359,"y":66,"w":105,"h":206,"r":14,"fill":"#FFFFFF"},{"kind":"text","x":411,"y":92,"size":17,"fill":"#8A8A92","align":"center","text":"RAM"},{"kind":"text","x":411,"y":138,"size":36,"fill":"#202026","align":"center","text":"{ram_pct:.0}%"},{"kind":"bar","x":371,"y":154,"w":81,"h":9,"track":"#F0E2E6","fill":"#8A4AD8","binding":"ram_pct","min":0,"max":100,"status_binding":"ram_pct","warning":85,"critical":95},{"kind":"text","x":385,"y":240,"size":11,"fill":"#9A9AA2","align":"center","text":"Used"},{"kind":"text","x":385,"y":260,"size":14,"fill":"#353540","align":"center","text":"{ram_used:.1}G"},{"kind":"text","x":437,"y":240,"size":11,"fill":"#9A9AA2","align":"center","text":"Free"},{"kind":"text","x":437,"y":260,"size":14,"fill":"#353540","align":"center","text":"{ram_free:.1}G"},{"kind":"panel","x":14,"y":284,"w":220,"h":144,"r":14,"fill":"#FFFFFF"},{"kind":"text","x":30,"y":316,"size":17,"fill":"#9A9AA2","text":"Upload"},{"kind":"text","x":30,"y":344,"size":21,"fill":"#202026","text":"{net_up:.2} kB/s"},{"kind":"text","x":30,"y":386,"size":17,"fill":"#9A9AA2","text":"Download"},{"kind":"text","x":30,"y":414,"size":21,"fill":"#202026","text":"{net_down:.2} kB/s"},{"kind":"panel","x":244,"y":284,"w":220,"h":144,"r":14,"fill":"#FFFFFF"},{"kind":"text","x":240,"y":455,"size":17,"fill":"#F26AA0","align":"center","text":"CPU + 2 GPU  {component_watts:.0} W"},{"kind":"text","x":66,"y":202,"size":24,"fill":"#202026","align":"center","text":"{cpu_temp:.0}°C","visible_if":"cpu_temp","status_binding":"cpu_temp","warning":85,"critical":95,"temperature_text":true},{"kind":"text","x":181,"y":202,"size":24,"fill":"#202026","align":"center","text":"{gpu_temp:.0}°C","visible_if":"gpu_temp","status_binding":"gpu_temp","warning":80,"critical":87,"temperature_text":true},{"kind":"text","x":296,"y":202,"size":24,"fill":"#202026","align":"center","text":"{gpu2_temp:.0}°C","visible_if":"gpu2_temp","status_binding":"gpu2_temp","warning":80,"critical":87,"temperature_text":true},{"kind":"text","x":299,"y":316,"size":15,"fill":"#8A8A92","align":"center","text":"PUMP"},{"kind":"text","x":299,"y":344,"size":25,"fill":"#202026","align":"center","text":"{pump_pct:.0}%"},{"kind":"text","x":299,"y":386,"size":11,"fill":"#9A9AA2","align":"center","text":"RPM"},{"kind":"text","x":299,"y":414,"size":21,"fill":"#202026","align":"center","text":"{pump_rpm:.0}"},{"kind":"text","x":409,"y":316,"size":15,"fill":"#8A8A92","align":"center","text":"FAN"},{"kind":"text","x":409,"y":344,"size":25,"fill":"#202026","align":"center","text":"{fan_pct:.0}%"},{"kind":"text","x":409,"y":386,"size":11,"fill":"#9A9AA2","align":"center","text":"RPM"},{"kind":"text","x":409,"y":414,"size":21,"fill":"#202026","align":"center","text":"{fan_rpm:.0}"}]}}</script>
+<script>
+(() => {
+  const root = document.getElementById('spartacus-lcd');
+  const specs = JSON.parse(document.getElementById('spartacus-specs').textContent);
+  const samples = {
+    idle: {cpu_temp:38,cpu_usage:12,cpu_freq:3.60,cpu_watts:20,gpu_temp:41,gpu_usage:8,gpu_watts:28,gpu2_temp:36,gpu2_usage:4,gpu2_watts:25,ram_used:10.2,ram_total:32,disk_used:30.72,disk_total:1024,net_up:4.2,net_down:16.8,pump_rpm:2300,pump_pct:65,fan_pct:35,fan_rpm:750},
+    gaming: {cpu_temp:62,cpu_usage:54,cpu_freq:5.20,cpu_watts:95,gpu_temp:68,gpu_usage:92,gpu_watts:480,gpu2_temp:61,gpu2_usage:67,gpu2_watts:350,ram_used:18.4,ram_total:32,disk_used:30.72,disk_total:1024,net_up:126.4,net_down:2840.7,pump_rpm:2900,pump_pct:82,fan_pct:60,fan_rpm:1250},
+    stress: {cpu_temp:92,cpu_usage:100,cpu_freq:5.40,cpu_watts:230,gpu_temp:88,gpu_usage:99,gpu_watts:580,gpu2_temp:76,gpu2_usage:96,gpu2_watts:540,ram_used:26.8,ram_total:32,disk_used:30.72,disk_total:1024,net_up:214.8,net_down:4068.2,pump_rpm:3400,pump_pct:100,fan_pct:85,fan_rpm:1800},
+    heat: {cpu_temp:102,cpu_usage:100,cpu_freq:5.10,cpu_watts:245,gpu_temp:89,gpu_usage:99,gpu_watts:595,gpu2_temp:88,gpu2_usage:98,gpu2_watts:585,ram_used:31.2,ram_total:32,disk_used:30.72,disk_total:1024,net_up:214.8,net_down:4068.2,pump_rpm:3400,pump_pct:100,fan_pct:100,fan_rpm:1800}
+  };
+  const defaults = {
+    aurora: {background:'#000000',panels:'#1C1C1D',separator:'#383839',text:'#FEFEFF',secondary:'#8E8E93',inactive:'#58585C',normal:'#30D158',warning:'#FFD60A',critical:'#FF453A',scenario:'stress'},
+    cards: {background:'#000000',panels:'#1C1C1D',separator:'#383839',text:'#FEFEFF',secondary:'#8E8E93',inactive:'#58585C',normal:'#30D158',warning:'#FFD60A',critical:'#FF453A',scenario:'stress'}
+  };
+  const states = {};
+  const components = {};
+  function restore(snapshot) {
+    const stored = snapshot?.modelContent?.spartacusLcd;
+    const saved = [2,3,4,5,6].includes(stored?.version) && stored?.paletteId === 'ios26-dark' ? stored : null;
+    for (const name of Object.keys(defaults)) {
+      const next = {...defaults[name]};
+      if (saved?.palettes?.[name]) {
+        for (const key of Object.keys(next)) {
+          const value = saved.palettes[name][key];
+          if (key === 'scenario' && Object.hasOwn(samples, value)) next[key] = value;
+          else if (key !== 'scenario' && typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)) {
+            next[key] = key === 'warning' && stored.version < 5 && value.toUpperCase() === '#FF9F0A' ? '#FFD60A' : value;
+          }
+        }
+      }
+      if (states[name]) Object.assign(states[name], next);
+      else states[name] = next;
+    }
+  }
+  restore(window.openai?.widgetState);
+  function save() {
+    const palettes = Object.fromEntries(Object.entries(states).map(([name,state]) => [name,{...state}]));
+    window.openai?.setWidgetState?.({modelContent:{spartacusLcd:{version:6,paletteId:'ios26-dark',layoutId:'dual-gpu-fan-grid',cardOrder:['CPU','GPU-1','GPU-2','RAM'],ssdHeader:'SSD 3%',temperatureText:'normal white, warning yellow, critical red',colorMeaning:{cpu:'temperature',gpu:'temperature',ram:'occupancy'},thresholds:{cpuC:[85,95],gpuC:[80,87],ramPct:[85,95]},hardware:{cpuAssumed:'Intel Core Ultra 7 270K Plus',gpu:'Palit RTX 5090 GameRock OC',cpuMaxC:105,cpuMaxTurboW:250,gpuMaxC:90,gpuBoardPowerW:600},powerFooter:'CPU + GPU-1 + GPU-2 only; excludes the rest of the PC and PSU losses',palettes,source:'nerdjb/spartacus-control-center',mockData:true,cardsTextAnchorFixes:true}},privateContent:null})?.catch(() => {});
+  }
+  function template(text, data) {
+    return String(text || '').replace(/\{([a-z][a-z0-9_]*)(?::\.(\d+))?\}/g, (_, key, digits) => {
+      const value = data[key];
+      if (value === undefined || value === null || (typeof value === 'number' && !Number.isFinite(value))) return '—';
+      return typeof value === 'number' && digits !== undefined ? value.toFixed(Number(digits)) : String(value);
+    });
+  }
+  function rounded(ctx,x,y,w,h,r,color) {
+    if (!(w > 0 && h > 0)) return;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(x,y,w,h,Math.max(0,Math.min(r,w/2,h/2)));
+    ctx.fill();
+  }
+  function draw(name) {
+    const component = components[name];
+    const state = states[name];
+    const spec = specs[name];
+    const ctx = component.canvas.getContext('2d');
+    const data = {...samples[state.scenario],time:'17:42',date:'21.10'};
+    data.ram_pct = data.ram_used / data.ram_total * 100;
+    data.ram_free = data.ram_total - data.ram_used;
+    data.disk_pct = data.disk_used / data.disk_total * 100;
+    data.disk_free = data.disk_total - data.disk_used;
+    const watts = [data.cpu_watts,data.gpu_watts,data.gpu2_watts];
+    data.component_watts = watts.every(Number.isFinite) ? watts.reduce((sum,value) => sum+value,0) : null;
+    const statusColor = widget => {
+      if (!widget.status_binding) return state.text;
+      const value = data[widget.status_binding];
+      if (!Number.isFinite(value)) return state.inactive;
+      return value >= widget.critical ? state.critical : value >= widget.warning ? state.warning : state.normal;
+    };
+    const colors = name === 'aurora' ? {
+      '#0F332A':state.panels,'#E8FFF4':state.text,'#7FBFA8':state.secondary,'#5F8F7E':state.secondary,'#1A4A3C':state.inactive,'#3DDC97':state.secondary
+    } : {
+      '#3A215E':state.panels,'#FFFFFF':state.text,'#202026':state.text,'#353540':state.secondary,'#8A8A92':state.text,'#9A9AA2':state.secondary,'#777782':state.secondary,'#C8BCE0':state.secondary,'#F0E2E6':state.inactive,'#F6DFEA':state.inactive,'#F3445C':state.text,'#F26AA0':state.secondary,'#D43CB8':state.text,'#8A4AD8':state.text
+    };
+    const color = value => colors[String(value).toUpperCase()] || value;
+    ctx.fillStyle = state.background;
+    ctx.fillRect(0,0,480,480);
+    ctx.textBaseline = 'alphabetic';
+    const text = (content,x,y,size,fill,align='left') => {
+      ctx.fillStyle = fill;
+      ctx.font = `${Math.max(6,size)}px Arial, sans-serif`;
+      ctx.textAlign = align;
+      ctx.fillText(template(content,data),Math.trunc(x),Math.trunc(y));
+    };
+    for (const widget of spec.widgets) {
+      if (widget.visible_if && !Number.isFinite(data[widget.visible_if])) continue;
+      const fill = color(widget.fill);
+      if (widget.kind === 'rect' || widget.kind === 'panel') {
+        rounded(ctx,widget.x,widget.y,widget.w,widget.h,widget.kind === 'panel' ? widget.r : 0,state.panels);
+      } else if (widget.kind === 'text') {
+        const temperature = data[widget.status_binding];
+        const textFill = widget.temperature_text
+          ? !Number.isFinite(temperature) ? state.inactive : temperature >= widget.warning ? statusColor(widget) : state.text
+          : ['CPU','GPU','GPU-1','GPU-2','RAM','SSD'].includes(widget.text) ? state.text : fill;
+        text(widget.text,widget.x,widget.y,widget.size,textFill,widget.align);
+      } else if (widget.kind === 'bar' || widget.kind === 'ring') {
+        const value = data[widget.binding];
+        const pct = typeof value === 'number' ? Math.max(0,Math.min(1,(value-(widget.min || 0))/((widget.max ?? 100)-(widget.min || 0)))) : 0;
+        if (widget.kind === 'bar') {
+          const radius = widget.r || widget.h/2;
+          rounded(ctx,widget.x,widget.y,widget.w,widget.h,radius,color(widget.track));
+          rounded(ctx,widget.x,widget.y,Math.floor(widget.w*pct),widget.h,radius,statusColor(widget));
+        } else {
+          const start = (widget.start ?? -90)*Math.PI/180;
+          const sweep = (widget.sweep ?? 360)*Math.PI/180;
+          const fullCircle = Math.abs(sweep) >= Math.PI*2 - 0.0001;
+          ctx.save();
+          ctx.lineWidth = widget.thickness;
+          ctx.lineCap = fullCircle ? 'butt' : 'round';
+          ctx.strokeStyle = color(widget.track);
+          ctx.beginPath();ctx.arc(widget.cx,widget.cy,widget.r,start,start+sweep);
+          if (fullCircle) ctx.closePath();
+          ctx.stroke();
+          if (pct > 0) {
+            ctx.lineCap = fullCircle && pct >= 1 ? 'butt' : 'round';
+            ctx.strokeStyle=state.text;
+            ctx.beginPath();ctx.arc(widget.cx,widget.cy,widget.r,start,start+sweep*pct);
+            if (fullCircle && pct >= 1) ctx.closePath();
+            ctx.stroke();
+          }
+          if (widget.center_text) text(widget.center_text,widget.cx,widget.cy+Math.trunc(widget.center_size)*2/7,widget.center_size,state.text,'center');
+          ctx.restore();
+        }
+      }
+    }
+    if (name === 'cards') {
+      ctx.fillStyle = state.separator;
+      ctx.fillRect(30,362,188,1);
+      ctx.fillRect(260,362,188,1);
+    }
+    component.unit.style.background = state.panels;
+    component.select.value = state.scenario;
+    component.status.textContent = name === 'cards' ? `CPU ${data.cpu_temp}° · GPU-1 ${data.gpu_temp}° · GPU-2 ${data.gpu2_temp}°` : `CPU ${data.cpu_temp}° · GPU ${data.gpu_temp}°`;
+    const gpuDetail = name === 'cards' ? `GPU-1 ${data.gpu_temp} градусов, нагрузка ${data.gpu_usage} процентов; GPU-2 ${data.gpu2_temp} градусов, нагрузка ${data.gpu2_usage} процентов` : `GPU ${data.gpu_temp} градусов, нагрузка ${data.gpu_usage} процентов`;
+    const headerDetail = name === 'cards' ? `SSD ${data.disk_pct.toFixed(0)} процента в правом верхнем углу. ` : '';
+    component.canvas.setAttribute('aria-label',`Тестовый дисплей ${name}, все данные моковые. ${headerDetail}Карточки: CPU ${data.cpu_temp} градусов, нагрузка ${data.cpu_usage} процентов, ${data.cpu_watts} Вт; ${gpuDetail}; мощности GPU-1 ${data.gpu_watts} Вт и GPU-2 ${data.gpu2_watts} Вт; RAM ${data.ram_used} из ${data.ram_total} ГБ; помпа ${data.pump_pct} процентов, ${data.pump_rpm} оборотов в минуту; вентиляторы ${data.fan_pct} процентов, ${data.fan_rpm} оборотов в минуту. Цвет шкал CPU и GPU зависит от температуры, RAM — от заполнения. Сумма CPU и двух GPU ${data.component_watts ?? 'нет данных'} Вт, без остальных компонентов ПК.`);
+  }
+  for (const name of Object.keys(specs)) {
+    const unit = document.getElementById(`spartacus-${name}`);
+    const stage = unit.closest('.lcd-stage');
+    components[name] = {unit,canvas:unit.querySelector('canvas'),select:stage.querySelector('select'),status:stage.querySelector('.lcd-status')};
+    components[name].select.addEventListener('change',event => {
+      states[name].scenario=event.target.value;
+      draw(name);save();
+    });
+    draw(name);
+    if (globalThis.Tweak) {
+      const state = states[name];
+      const tweak = new Tweak({container:unit,onChange:() => {draw(name);save();}});
+      const labels = {background:'Фон экрана',panels:'Фон карточек',separator:'Разделители',text:'Основной текст',secondary:'Вторичный текст',inactive:'Неактивные элементы',normal:'Норма',warning:'Предупреждение',critical:'Критично'};
+      for (const key of Object.keys(state)) {
+        if (key !== 'scenario') tweak.addColorPicker(state,key,{label:labels[key],reference:`${name}.${key}`});
+      }
+    }
+  }
+  window.addEventListener('openai:set_globals',event => {
+    if (event.detail?.globals && Object.hasOwn(event.detail.globals,'widgetState')) {
+      restore(event.detail.globals.widgetState);
+      Object.keys(specs).forEach(draw);
+    }
+  });
+})();
+</script>

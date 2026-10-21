@@ -1,5 +1,17 @@
 # SPARTACUS Control Center
 
+## Foresko LCD preview
+
+This public fork includes an interactive **480×480 Foresko Dark** display prototype in [`preview/foresko-dark/index.html`](preview/foresko-dark/index.html). Download the repository and open that file in a browser, or run `python3 -m http.server 8000` from the repository root and visit `http://localhost:8000/preview/foresko-dark/`.
+
+The design uses the requested dark palette, CPU / GPU-1 / GPU-2 / RAM columns, a compact SSD percentage in the header, large temperature readings, small power readings, aligned network and cooling panels, and a PUMP / FAN grid showing duty percentages and RPM. It has no circular gauges or upper dividers. The footer sums CPU and both GPUs in watts.
+
+All preview values are **synthetic**. CPU/GPU bar lengths show utilization; colors show temperature status. RAM color follows occupancy. The footer excludes the rest of the PC and power-supply losses. This browser prototype does not connect to USB hardware or change the daemon's active theme. The editable fragment is [`preview.html`](preview/foresko-dark/preview.html).
+
+The upstream Linux application's documentation follows below.
+
+---
+
 **Linux control suite for the DeepCool SPARTACUS 360 / 420 AIO cooler** — a hardware-verified Rust daemon implementing the reverse-engineered USB protocol, plus a PyQt6 desktop app with live telemetry, fan-curve automation, ARGB lighting and a **Theme Studio** for designing 480×480 screens that the daemon renders natively.
 
 Everything shown on the panel or in the UI flows through one validated telemetry pipeline: bad sensors show `--`, never fake zeros; spikes are filtered; stale data is labelled.
