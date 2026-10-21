@@ -230,7 +230,13 @@ async fn main() -> Result<()> {
     // Start USB monitor (LCD Display + Controller)
     let theme = config::load_theme_override().unwrap_or_else(|| config.screen.theme.clone());
     let refresh_ms = config.screen.refresh_ms;
-    let usb_monitor = usb::monitor::USBMonitor::new(state.clone(), &theme, refresh_ms, command_rx);
+    let usb_monitor = usb::monitor::USBMonitor::new(
+        state.clone(),
+        &theme,
+        refresh_ms,
+        config.screen.rotate,
+        command_rx,
+    );
     let usb_handle = tokio::spawn(async move {
         match usb_monitor {
             Ok(mut monitor) => {

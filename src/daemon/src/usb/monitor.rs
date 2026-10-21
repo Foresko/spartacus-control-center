@@ -43,6 +43,7 @@ pub struct USBMonitor {
     controller: ControllerDevice,
     renderer: ScreenRenderer,
     refresh_ms: u64,
+    rotate: u16,
     commands: Receiver<DaemonCommand>,
 }
 
@@ -55,6 +56,7 @@ impl USBMonitor {
         state: Arc<RwLock<DaemonState>>,
         theme: &str,
         refresh_ms: u64,
+        rotate: u16,
         commands: Receiver<DaemonCommand>,
     ) -> Result<Self> {
         Ok(Self {
@@ -63,6 +65,7 @@ impl USBMonitor {
             controller: ControllerDevice::new(),
             renderer: ScreenRenderer::new(theme)?,
             refresh_ms,
+            rotate,
             commands,
         })
     }
@@ -214,7 +217,7 @@ impl USBMonitor {
             let state = self.state.read().await;
             screen::snapshot(&state)
         };
-        let frame = self.renderer.render(&metrics);
+        let frame = screen::rotate_frame(self.renderer.render(&metrics), self.rotate);
         self.lcd.send_rgb_frame(&frame, FRAME_QUALITY).await?;
         Ok(())
     }

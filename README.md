@@ -622,6 +622,10 @@ Panel shows magenta blocks
 
 a color in your theme spec failed to parse (`#RRGGBB` expected)
 
+Panel content is rotated
+
+set `rotate = 90` / `180` / `270` (degrees clockwise) under `[screen]` in `config.toml`; the panel's own orientation setting (`LcdSetConfig`) doesn't apply to streamed frames. The daemon ignores a `config.toml` that lacks any of the `[usb]`, `[cooling]`, `[telemetry]` or `[ipc]` sections
+
 Theme didn't switch
 
 name must match a builtin or a file in `~/.config/spartacus/themes/<name>.json`; check daemon log for `Theme set to …`
