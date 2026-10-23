@@ -109,8 +109,13 @@ pub async fn gpu_telemetry() -> Option<(f32, f32)> {
         .output()
         .await
         .ok()?;
-    let stdout = String::from_utf8(output.stdout).ok()?;
-    let parts: Vec<&str> = stdout.trim().split(',').map(str::trim).collect();
+    parse_nvidia_primary(&String::from_utf8(output.stdout).ok()?)
+}
+
+/// The primary GPU is nvidia-smi's first line; with several GPUs there is one
+/// line each (GPU-2 is read by `nvidia_gpus`).
+fn parse_nvidia_primary(stdout: &str) -> Option<(f32, f32)> {
+    let parts: Vec<&str> = stdout.lines().next()?.split(',').map(str::trim).collect();
     if parts.len() >= 2 {
         return Some((parts[0].parse().ok()?, parts[1].parse().ok()?));
     }
@@ -371,12 +376,19 @@ pub async fn motherboard_fan_rpms() -> Vec<u16> {
 
 #[cfg(test)]
 mod tests {
-    use super::parse_nvidia_gpus;
+    use super::{parse_nvidia_gpus, parse_nvidia_primary};
 
     #[test]
     fn parses_every_gpu_line() {
         let gpus = parse_nvidia_gpus("31, 0, 54.20\n45, 97, [N/A]\n");
         assert_eq!(gpus, vec![(31.0, 0.0, Some(54.2)), (45.0, 97.0, None)]);
         assert!(parse_nvidia_gpus("").is_empty());
+    }
+
+    #[test]
+    fn primary_is_the_first_gpu_line() {
+        assert_eq!(parse_nvidia_primary("39, 12\n"), Some((39.0, 12.0)));
+        assert_eq!(parse_nvidia_primary("39, 12\n31, 0\n"), Some((39.0, 12.0)));
+        assert_eq!(parse_nvidia_primary(""), None);
     }
 }
